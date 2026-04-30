@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>待办事项</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>📝 我的待办事项</h1>
+        <div class="input-section">
+            <input type="text" id="task-input" placeholder="添加新任务...">
+            <button onclick="addTask()">添加</button>
+        </div>
+        <ul id="todo-list"></ul>
+    </div>
+    <script>
+        async function loadTodos() {
+            const res = await fetch('/todos');
+            const todos = await res.json();
+            const list = document.getElementById('todo-list');
+            list.innerHTML = '';
+            todos.forEach(todo => {
+                const li = document.createElement('li');
+                li.className = todo.done ? 'done' : '';
+                li.innerHTML = `
+                    <span>${todo.task}</span>
+                    <div>
+                        <button onclick="toggleDone(${todo.id}, ${!todo.done})">${todo.done ? '↩️' : '✅'}</button>
+                        <button onclick="deleteTask(${todo.id})" class="delete">🗑️</button>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        async function addTask() {
+            const input = document.getElementById('task-input');
+            if (!input.value.trim()) return;
+            await fetch('/todos', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({task: input.value.trim()})
+            });
+            input.value = '';
+            loadTodos();
+        }
+
+        async function deleteTask(id) {
+            await fetch(`/todos/${id}`, {method: 'DELETE'});
+            loadTodos();
+        }
+
+        async function toggleDone(id, done) {
+            await fetch(`/todos/${id}`, {
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({done})
+            });
+            loadTodos();
+        }
+
+        window.onload = loadTodos;
+    </script>
+</body>
+</html>
